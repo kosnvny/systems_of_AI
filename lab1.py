@@ -184,3 +184,55 @@ axes[1, 2].remove()
 
 plt.tight_layout()
 plt.show()
+
+print()
+
+# линейная регрессия без регуляризации
+
+linear_model = LinearRegression()
+linear_model.fit(x_train, y_train)
+coefficients = pd.DataFrame({
+    "Feature": features,
+    "Coefficients": linear_model.coef_
+})
+print(coefficients)
+format_string("Intercept:", "\033[35m")
+print(linear_model.intercept_)
+
+y_train_pred = linear_model.predict(x_train)
+y_test_pred = linear_model.predict(x_test)
+
+def calculate_metrics(y_true, y_pred, dataset_name):
+    rmse = np.sqrt(mean_squared_error(y_true, y_pred))
+    mae = mean_absolute_error(y_true, y_pred)
+    r2 = r2_score(y_true, y_pred)
+    print(f"\n{dataset_name}")
+    print(f"RMSE: {rmse:.2f}")
+    print(f"MAE: {mae:.2f}")
+    print(f"R²: {r2:.4f}")
+    return {
+        "RMSE": rmse,
+        "MAE": mae,
+        "R2": r2
+    }
+
+linear_train_metrics = calculate_metrics(y_train, y_train_pred, "Linear Regression - TRAIN")
+linear_test_metrics = calculate_metrics(y_test, y_test_pred, "Linear Regression - TEST")
+
+plt.figure(figsize=(8, 6))
+sns.scatterplot(x=y_test, y=y_test_pred)
+plt.xlabel("Реальные Visits")
+plt.ylabel("Предсказанные Visits")
+plt.title("Linear Regression: реальные vs предсказанные")
+plt.show()
+
+plt.figure(figsize=(8, 6))
+sns.scatterplot(x=y_test, y=y_test_pred)
+minn = min(y_test.min(), y_test_pred.min())
+maxx = max(y_test.max(), y_test_pred.max())
+
+plt.plot([minn, maxx], [minn, maxx], "r--")
+plt.xlabel("Реальные значения")
+plt.ylabel("Предсказанные значения")
+plt.title("Linear Regression: Actual vs Predicted")
+plt.show()
