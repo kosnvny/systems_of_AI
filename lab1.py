@@ -151,7 +151,6 @@ plt.tight_layout()
 plt.show()
 # todo конец анализа
 
-# todo что-то не так с графиками
 plt.figure(figsize=(10, 5))
 sns.histplot(train_df["Visits"], bins=30, kde=True)
 plt.title("Распределение Visits (таргета) в обучающей выборке")
@@ -161,7 +160,6 @@ plt.figure(figsize=(10, 4))
 sns.boxplot(x=train_df["Visits"])
 plt.title("Boxplot Visits")
 plt.show()
-# todo конец неправильных графиков
 
 plt.figure(figsize=(10, 8))
 sns.heatmap(train_df.corr(), annot=True, cmap="coolwarm", fmt=".2f")
@@ -209,7 +207,7 @@ def calculate_metrics(y_true, y_pred, dataset_name):
     print(f"\n{dataset_name}")
     print(f"RMSE: {rmse:.2f}")
     print(f"MAE: {mae:.2f}")
-    print(f"R²: {r2:.4f}")
+    print(f"R^2: {r2:.4f}")
     return {
         "RMSE": rmse,
         "MAE": mae,
@@ -250,4 +248,97 @@ plt.axhline(0, color="red", linestyle="--")
 plt.xlabel("Предсказанные значения")
 plt.ylabel("Остатки")
 plt.title("Residuals vs Predictions")
+plt.show()
+
+train_data = x_train.copy()
+train_data["Visits"] = y_train
+
+def remove_outliers_iqr(data, columns):
+    result = data.copy()
+    for column in columns:
+        Q1 = result[column].quantile(0.25)
+        Q3 = result[column].quantile(0.75)
+        IQR = Q3 - Q1
+        lower_bound = Q1 - 1.5 * IQR
+        upper_bound = Q3 + 1.5 * IQR
+        result = result[(result[column] >= lower_bound) & (result[column] <= upper_bound)]
+    return result
+
+outlier_columns = ["Active", "Favourites", "Likes", "Dislikes"]
+train_clean = remove_outliers_iqr(train_data, outlier_columns)
+print("До удаления выбросов:", train_data.shape[0])
+print("После удаления выбросов:", train_clean.shape[0])
+
+x_train_clean = train_clean[features]
+y_train_clean = train_clean[target]
+
+ridge_pipeline = Pipeline(steps=[("scaler", StandardScaler()), ("ridge", Ridge(alpha=1.0))])
+ridge_pipeline.fit(x_train_clean, y_train_clean)
+y_train_ridge_pred = ridge_pipeline.predict(x_train_clean)
+y_test_ridge_pred = ridge_pipeline.predict(x_test)
+ridge_train_metrics = calculate_metrics(y_train_clean, y_train_ridge_pred, "Ridge Regression - TRAIN")
+ridge_test_metrics = calculate_metrics(y_test, y_test_ridge_pred, "Ridge Regression - TEST")
+
+plt.figure(figsize=(8, 6))
+sns.scatterplot(x=y_test, y=y_test_ridge_pred)
+
+min_value = min(y_test.min(), y_test_ridge_pred.min())
+max_value = max(y_test.max(), y_test_ridge_pred.max())
+
+plt.plot([min_value, max_value], [min_value, max_value], "r--")
+plt.xlabel("Реальные Visits")
+plt.ylabel("Предсказанные Visits")
+plt.title("Ridge Regression: Actual vs Predicted")
+plt.show()
+
+ridge_residuals = y_test - y_test_ridge_pred
+plt.figure(figsize=(10, 5))
+sns.histplot(ridge_residuals, bins=30, kde=True)
+plt.axvline(0, color="red", linestyle="--")
+plt.title("Распределение ошибок Ridge Regression")
+plt.show()
+
+comparison = pd.DataFrame({
+    "Model": [
+        "Linear Regression",
+        "Ridge Regression"
+    ],
+    "RMSE": [
+        linear_test_metrics["RMSE"],
+        ridge_test_metrics["RMSE"]
+    ],
+    "MAE": [
+        linear_test_metrics["MAE"],
+        ridge_test_metrics["MAE"]
+    ],
+    "R2": [
+        linear_test_metrics["R2"],
+        ridge_test_metrics["R2"]
+    ]
+})
+
+print(comparison)
+
+plt.figure(figsize=(8, 5))
+sns.barplot(data=comparison, x="Model", y="R2")
+plt.title("Сравнение моделей по R2")
+plt.xlabel("Модель")
+plt.ylabel("R2")
+plt.ylim(0, 1)
+plt.tight_layout()
+plt.show()
+
+comparison_plot = comparison.melt(
+    id_vars="Model",
+    value_vars=["RMSE", "MAE"],
+    var_name="Metric",
+    value_name="Value"
+)
+
+plt.figure(figsize=(10, 6))
+sns.barplot(data=comparison_plot, x="Metric", y="Value", hue="Model")
+plt.title("Сравнение моделей по основным метрикам")
+plt.xlabel("Метрика")
+plt.ylabel("Значение")
+plt.tight_layout()
 plt.show()
