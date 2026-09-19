@@ -153,7 +153,7 @@ plt.show()
 
 # todo что-то не так с графиками
 plt.figure(figsize=(10, 5))
-sns.histplot(train_df["Visits"], bins=10, kde=True)
+sns.histplot(train_df["Visits"], bins=30, kde=True)
 plt.title("Распределение Visits (таргета) в обучающей выборке")
 plt.show()
 
@@ -235,4 +235,19 @@ plt.plot([minn, maxx], [minn, maxx], "r--")
 plt.xlabel("Реальные значения")
 plt.ylabel("Предсказанные значения")
 plt.title("Linear Regression: Actual vs Predicted")
+plt.show()
+
+residuals = y_test - y_test_pred
+plt.figure(figsize=(10, 5))
+sns.histplot(residuals, bins=30, kde=True)
+plt.axvline(0, color="red", linestyle="--")
+plt.title("Распределение ошибок Linear Regression")
+plt.show()
+
+plt.figure(figsize=(8, 5))
+sns.scatterplot(x=y_test_pred, y=residuals)
+plt.axhline(0, color="red", linestyle="--")
+plt.xlabel("Предсказанные значения")
+plt.ylabel("Остатки")
+plt.title("Residuals vs Predictions")
 plt.show()
