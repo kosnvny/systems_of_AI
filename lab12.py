@@ -60,7 +60,7 @@ def format_string(string, colour):
 
 # Set the path to the file you'd like to load
 path = kagglehub.dataset_download("biggiefats/roblox-games-dataset")
-
+print(path)
 file_path = os.path.join(path, "roblox_games.csv")
 
 df = pd.read_csv(file_path)
